@@ -63,10 +63,22 @@ Host slurm-login03
 Host slurm-sandbox
     HostName slurm-login02.hpc.wehi.edu.au
     User <your-username>
-    RemoteCommand ~/bin/bubblewrap.sh
+    RemoteCommand /home/users/allstaff/<your-username>/bin/bubblewrap.sh
+    RequestTTY yes
 ```
 
 Replace `<your-username>` with your HPC username (e.g. `smith.a`). If your home directory is on `/stornext/Home`, adjust the `RemoteCommand` path accordingly.
+
+To verify the sandboxed login, in a terminal type
+
+```console
+ssh -v slurm-sandbox
+```
+you should see something like this in the output:
+
+```
+debug1: Sending command: /home/users/allstaff/<your-username>/bin/bubblewrap.sh
+```
 
 ### Connecting from VSCode
 
@@ -140,7 +152,6 @@ If you SSH in normally (or are already on a login node) you can launch the sandb
 # Now launch Claude Code (or any other agent) — it runs inside the sandbox
 claude
 ```
-
 
 ## Compatibility
 
