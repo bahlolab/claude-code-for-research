@@ -63,7 +63,7 @@ Host slurm-login03
 Host slurm-sandbox
     HostName slurm-login02.hpc.wehi.edu.au
     User <your-username>
-    RemoteCommand /vast/home/users/<your-username>/bin/bubblewrap.sh
+    RemoteCommand ~/bin/bubblewrap.sh
 ```
 
 Replace `<your-username>` with your HPC username (e.g. `smith.a`). If your home directory is on `/stornext/Home`, adjust the `RemoteCommand` path accordingly.
@@ -78,6 +78,56 @@ Replace `<your-username>` with your HPC username (e.g. `smith.a`). If your home 
 Any terminal you open in that window, and any Claude Code session you launch from it, runs inside the sandbox.
 
 > **Tip — proxy jump / SSH agent forwarding**: if your site requires a jump host or SSH agent forwarding, add `ForwardAgent yes` and `ProxyJump <jumphost>` to the `slurm-sandbox` stanza. The `RemoteCommand` still runs on the final destination.
+
+In VS Code `settings.json` (Command Palette → *Preferences: Open User
+Settings (JSON)*):
+
+```json
+{
+  "remote.SSH.enableRemoteCommand": true,
+  "remote.SSH.useLocalServer": true
+}
+```
+
+By default VS Code **ignores** `RemoteCommand`. `enableRemoteCommand`
+turns it on; `useLocalServer` (the default) must stay on for it to work.
+`remote.SSH.useExecServer` can be left at its default (`true`) — the
+server still launches through the sandbox.
+
+The VS Code server on the remote is a **persistent daemon**. It outlives
+your connection and is reused on every reconnect. If a server was ever
+started *before* the settings above were correct, it will reuse it forever.
+
+To reset kill it via the command palette
+
+> Command Palette → **"Remote-SSH: Kill VS Code Server on Host"** → pick
+> the host → reconnect.
+
+This also clears VS Code's client-side connection cache. The next connect
+launches a fresh server through the sandbox.
+
+### Verifying the sandbox
+
+In a **VS Code integrated terminal**, a masked
+volume should look empty while your home is still there:
+
+```console
+$ ls /stornext/Genomics      # masked → empty
+$ ls /vast/projects          # masked → empty
+$ ls /vast/home              # visible → your homes
+```
+
+Compare against a normal (non-sandbox) login node, where those paths show
+real contents. If the masked paths are empty inside VS Code but populated
+on a plain login, the sandbox is working.
+
+To confirm at the process level, the server should have a `bwrap`
+ancestor:
+
+```console
+$ pgrep -u "$USER" -f server-main.js        # get the pid, then walk PPIDs
+# expect: node server-main.js → code-server → command-shell → bash --login → bwrap
+```
 
 ## Option 2 — CLI agents directly
 
